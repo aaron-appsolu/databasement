@@ -64,7 +64,7 @@ mongorestore --host='...' --port='...' --username='...' --password='...' \
 ```
 
 :::info
-Redis/Valkey restore is not currently supported. RDB file imports require direct server access.
+Redis/Valkey and Neo4j restore is not currently supported: both write into the server's own data directory, which requires direct server access. See the [Neo4j manual restore steps](database-servers#restoring-manually).
 :::
 
 All snapshots are decompressed with `gzip -d` before restore.

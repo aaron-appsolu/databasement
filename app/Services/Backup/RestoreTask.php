@@ -52,8 +52,8 @@ class RestoreTask
 
             $this->validateCompatibility($target->databaseType, $config->snapshotDatabaseType);
 
-            if ($target->databaseType === DatabaseType::REDIS) {
-                throw new RestoreException('Automated restore is not supported for Redis/Valkey. Please restore manually.');
+            if (! $target->databaseType->supportsRestore()) {
+                throw new RestoreException("Automated restore is not supported for {$target->databaseType->label()}. Please restore manually.");
             }
 
             if ($target->requiresSshTunnel()) {

@@ -15,6 +15,7 @@ enum DatabaseType: string
     case MONGODB = 'mongodb';
     case MSSQL = 'mssql';
     case FIREBIRD = 'firebird';
+    case NEO4J = 'neo4j';
 
     public function label(): string
     {
@@ -26,6 +27,7 @@ enum DatabaseType: string
             self::MONGODB => 'MongoDB',
             self::MSSQL => 'Microsoft SQL Server',
             self::FIREBIRD => 'Firebird',
+            self::NEO4J => 'Neo4j Enterprise',
         };
     }
 
@@ -39,6 +41,7 @@ enum DatabaseType: string
             self::MONGODB => 'devicon.mongodb',
             self::MSSQL => 'devicon.microsoftsqlserver',
             self::FIREBIRD => 'devicon.firebird',
+            self::NEO4J => 'devicon.neo4j',
         };
     }
 
@@ -70,7 +73,44 @@ enum DatabaseType: string
             self::MONGODB => 27017,
             self::MSSQL => 1433,
             self::FIREBIRD => 3050,
+            self::NEO4J => 7687,
         };
+    }
+
+    /**
+     * Whether Databasement can restore a snapshot of this type itself.
+     *
+     * Redis/Valkey RDB files and Neo4j `.backup` artifacts both have to be
+     * placed into the server's own data directory, which a remote client
+     * cannot do, so they are backup-only and restored by hand.
+     */
+    public function supportsRestore(): bool
+    {
+        return ! in_array($this, [self::REDIS, self::NEO4J], true);
+    }
+
+    /**
+     * Values of the types {@see supportsRestore()} rules out, for queries.
+     *
+     * @return list<string>
+     */
+    public static function backupOnlyValues(): array
+    {
+        return array_values(array_map(
+            fn (self $type) => $type->value,
+            array_filter(self::cases(), fn (self $type) => ! $type->supportsRestore()),
+        ));
+    }
+
+    /**
+     * Whether an SSH tunnel can carry everything this type's client needs.
+     *
+     * The tunnel forwards the server's one port. A Neo4j backup connects to
+     * a second one (the backup listener), which the tunnel does not reach.
+     */
+    public function supportsSshTunnel(): bool
+    {
+        return $this !== self::NEO4J;
     }
 
     /**
@@ -105,6 +145,7 @@ enum DatabaseType: string
                 ? sprintf('sqlsrv:Server=%s,%d;Database=%s;TrustServerCertificate=true;Encrypt=true', $host, $port, $database)
                 : sprintf('sqlsrv:Server=%s,%d;TrustServerCertificate=true;Encrypt=true', $host, $port),
             self::FIREBIRD => throw new \RuntimeException('Firebird does not support PDO connections'),
+            self::NEO4J => throw new \RuntimeException('Neo4j does not support PDO connections'),
         };
     }
 
@@ -117,7 +158,7 @@ enum DatabaseType: string
      */
     public function createPdo(DatabaseServer $server, ?string $database = null, int $timeout = 30): \PDO
     {
-        if (in_array($this, [self::REDIS, self::MONGODB, self::FIREBIRD], true)) {
+        if (in_array($this, [self::REDIS, self::MONGODB, self::FIREBIRD, self::NEO4J], true)) {
             throw new \RuntimeException("{$this->label()} does not support PDO connections");
         }
 
@@ -221,6 +262,7 @@ enum DatabaseType: string
             self::MONGODB => 'archive',
             self::MSSQL => 'dacpac',
             self::FIREBIRD => 'fbk',
+            self::NEO4J => 'backup',
             default => 'sql',
         };
     }

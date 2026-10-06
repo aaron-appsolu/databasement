@@ -48,7 +48,12 @@ test('connection succeeds', function (string $databaseType) {
     if (isset($server)) {
         IntegrationTestHelpers::dropDatabase($databaseType, $server, $config['database']);
     }
-})->with([...array_column(DatabaseType::cases(), 'value'), 'mariadb']);
+})->with([
+    // Neo4j Enterprise needs a licensed container and its own Java client, so
+    // its integration test is opt-in (tests/Integration/Neo4jBackupTest.php).
+    ...array_diff(array_column(DatabaseType::cases(), 'value'), ['neo4j']),
+    'mariadb',
+]);
 
 test('connection fails with invalid credentials', function (string $databaseType) {
     $config = IntegrationTestHelpers::getDatabaseConfig($databaseType);

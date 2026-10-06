@@ -26,6 +26,17 @@ echo "base64:$(openssl rand -base64 32)"
 If you change the encryption key, you will not be able to restore backups that were encrypted with the previous key. Keep your encryption key safe and backed up separately.
 :::
 
+## Neo4j Clients
+
+Neo4j Enterprise backups need `neo4j-admin` and `cypher-shell`, which are not in the image. Mount a Neo4j Enterprise distribution of the same version as your servers, plus a Java 21 runtime built for Alpine, and point these at them:
+
+```bash
+NEO4J_BIN_DIR=/opt/neo4j/bin
+JAVA_HOME=/opt/jre
+```
+
+See [Database Servers → Neo4j](../../user-guide/database-servers#neo4j-enterprise) for the full setup.
+
 ## Hook Scripts
 
 Run a shell script after **every successful backup** and after **every successful restore**. Configure both from **Configuration → Backup → Hook Scripts** in the web UI — that screen also lists every variable available to each script.

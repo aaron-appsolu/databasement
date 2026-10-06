@@ -205,7 +205,7 @@ class Modal extends Component
                 /** @var Builder<Snapshot> $q */
                 $q->completed();
             })
-            ->where('database_type', '!=', DatabaseType::REDIS->value)
+            ->whereNotIn('database_type', DatabaseType::backupOnlyValues())
             ->orderBy('name')
             ->get(['id', 'name'])
             ->map(fn (DatabaseServer $s) => ['id' => $s->id, 'name' => $s->name])

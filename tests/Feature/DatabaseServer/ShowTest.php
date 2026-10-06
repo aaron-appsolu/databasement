@@ -78,15 +78,20 @@ test('delete cascades to scheduled restores referencing the server', function ()
     $this->assertDatabaseMissing('scheduled_restores', ['id' => $asTarget->id]);
 });
 
-test('confirmRestore on a Redis server opens the redis info modal', function () {
+test('confirmRestore on a backup-only server opens the manual restore modal', function (string $state, string $type) {
     $user = User::factory()->withAbilities([Ability::OperateRestores->value])->create();
-    $server = DatabaseServer::factory()->redis()->create();
+    $server = DatabaseServer::factory()->{$state}()->create();
 
     Livewire::actingAs($user)
         ->test(Show::class, ['server' => $server])
         ->call('confirmRestore')
-        ->assertSet('showRedisRestoreModal', true);
-});
+        ->assertSet('showManualRestoreModal', true)
+        ->assertSet('manualRestoreType', $type)
+        ->assertNotDispatched('open-restore-modal');
+})->with([
+    'redis' => ['redis', 'redis'],
+    'neo4j' => ['neo4j', 'neo4j'],
+]);
 
 test('snapshot counter only includes completed snapshots', function () {
     // Viewing needs no ability — an org member with zero grants can view a server.

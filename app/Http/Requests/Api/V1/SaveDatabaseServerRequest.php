@@ -68,12 +68,12 @@ class SaveDatabaseServerRequest extends FormRequest
             'dump_flags' => ['nullable', 'string', 'max:500', new SafeDumpFlags($databaseType)],
         ];
 
-        if (in_array($type, ['mysql', 'postgres', 'mongodb', 'redis'])) {
+        if (in_array($type, ['mysql', 'postgres', 'mongodb', 'redis', 'neo4j'])) {
             $rules['host'] = ['required', 'string', 'max:255', new SafeHost];
             $rules['port'] = 'required|integer|min:1|max:65535';
         }
 
-        if (in_array($type, ['mysql', 'postgres'])) {
+        if (in_array($type, ['mysql', 'postgres', 'neo4j'])) {
             $rules['username'] = 'required|string|max:255';
             $rules['password'] = 'nullable';
         }
@@ -91,6 +91,12 @@ class SaveDatabaseServerRequest extends FormRequest
 
         if ($type === 'mongodb') {
             $rules['auth_source'] = 'nullable|string|max:255';
+        }
+
+        if ($type === 'neo4j') {
+            $rules['backup_port'] = 'nullable|integer|min:1|max:65535';
+            // The tunnel forwards one port; the backup listener needs another.
+            $rules['ssh_config_id'] = 'prohibited';
         }
 
         /** @var DatabaseServer|null $existing */

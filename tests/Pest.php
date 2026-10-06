@@ -284,6 +284,12 @@ dataset('database server configs', [
         'host' => 'mongodb.example.com',
         'port' => 27017,
     ]],
+    'neo4j' => [[
+        'type' => 'neo4j',
+        'name' => 'Neo4j Server',
+        'host' => 'neo4j.example.com',
+        'port' => 7687,
+    ]],
 ]);
 
 dataset('retention policies', [

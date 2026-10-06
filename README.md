@@ -23,7 +23,7 @@
 </p>
 
 <p align="center">
-  A modern, self-hosted database backup management application for MySQL, PostgreSQL, MariaDB, Microsoft SQL Server, MongoDB, SQLite, Firebird, and Redis.
+  A modern, self-hosted database backup management application for MySQL, PostgreSQL, MariaDB, Microsoft SQL Server, MongoDB, SQLite, Firebird, Redis, and Neo4j.
 </p>
 
 <p align="center">
@@ -37,7 +37,7 @@
 
 ## Features
 
-- **Multi-database support** - Manage MySQL, PostgreSQL, MariaDB, Microsoft SQL Server, MongoDB, SQLite, Firebird, and Redis/Valkey servers from a single interface
+- **Multi-database support** - Manage MySQL, PostgreSQL, MariaDB, Microsoft SQL Server, MongoDB, SQLite, Firebird, Redis/Valkey, and Neo4j Enterprise servers from a single interface
 - **SSH tunnel support** - Connect to databases in private networks through a bastion/jump server with password or key-based authentication
 - **Remote agents** - Back up databases in firewalled or isolated networks with no inbound port: a lightweight agent connects out over HTTPS, dumps locally, and uploads to your storage
 - **Automated backups** - Schedule recurring backups on daily or weekly intervals. Flexible retention policies: simple time-based (days) or GFS (grandfather-father-son)
@@ -98,6 +98,7 @@ For production deployments, see our [configuration guide](https://david-crty.git
 | Firebird   | 3.x, 4.x, 5.x                 | `gbak` v5                    | Yes     |
 | Redis      | 2.8+                          | `redis-cli --rdb`            | No      |
 | Valkey     | 7.2+                          | `redis-cli --rdb`            | No      |
+| Neo4j      | 5.x Enterprise, 2025.x+ Enterprise | `neo4j-admin database backup` (not bundled) | No |
 
 See the [Database Servers documentation](https://david-crty.github.io/databasement/user-guide/database-servers#supported-versions) for version-specific backup and restore details.
 

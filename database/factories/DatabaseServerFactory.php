@@ -92,6 +92,21 @@ class DatabaseServerFactory extends Factory
     }
 
     /**
+     * Configure the factory for Neo4j Enterprise database type.
+     */
+    public function neo4j(): static
+    {
+        return $this->state(fn () => [
+            'name' => fake()->company().' Neo4j Server',
+            'database_type' => 'neo4j',
+            'host' => fake()->randomElement(['localhost', '127.0.0.1']),
+            'port' => 7687,
+            'username' => 'neo4j',
+            'extra_config' => ['backup_port' => 6362],
+        ]);
+    }
+
+    /**
      * Configure the factory for pattern-based database selection on the first
      * Backup row attached to this server.
      */

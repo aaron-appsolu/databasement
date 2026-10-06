@@ -28,6 +28,7 @@ class DatabaseProvider
             DatabaseType::MONGODB => new MongodbDatabase,
             DatabaseType::MSSQL => new MssqlDatabase,
             DatabaseType::FIREBIRD => new FirebirdDatabase,
+            DatabaseType::NEO4J => new Neo4jDatabase,
         };
     }
 
@@ -117,6 +118,10 @@ class DatabaseProvider
         // to run. Display-only configs, like the dump preview, leave it unset.
         if (in_array($config->databaseType, [DatabaseType::MYSQL, DatabaseType::POSTGRESQL], true)) {
             $dbConfig['probe_server_version'] = true;
+        }
+
+        if ($config->databaseType === DatabaseType::NEO4J) {
+            $dbConfig['backup_port'] = (int) ($extra['backup_port'] ?? Neo4jDatabase::DEFAULT_BACKUP_PORT);
         }
 
         if ($config->databaseType === DatabaseType::POSTGRESQL) {

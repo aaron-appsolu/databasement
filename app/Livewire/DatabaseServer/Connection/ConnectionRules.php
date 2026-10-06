@@ -25,6 +25,7 @@ abstract class ConnectionRules
             DatabaseType::SQLITE => new SqliteConnectionRules,
             DatabaseType::REDIS => new RedisConnectionRules,
             DatabaseType::MONGODB => new MongodbConnectionRules,
+            DatabaseType::NEO4J => new Neo4jConnectionRules,
             DatabaseType::MSSQL, DatabaseType::FIREBIRD, null => new ClientServerConnectionRules,
         };
     }

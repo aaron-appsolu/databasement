@@ -695,3 +695,27 @@ test('the dump preview names the client the detected server needs', function (?s
     'MySQL' => ['8.4.11', '/opt/mysql-client/bin/mysqldump '],
     'unreachable server keeps the previous output' => [null, 'mariadb-dump '],
 ]);
+
+test('creating a Neo4j server stores its backup port and never an SSH tunnel', function () {
+    $user = User::factory()->withAbilities([Ability::ManageDatabaseServers->value])->create();
+
+    Livewire::actingAs($user)
+        ->test(Create::class)
+        ->set('form.name', 'Graph')
+        ->set('form.ssh_enabled', true)
+        ->set('form.database_type', 'neo4j')
+        ->assertSet('form.port', 7687)
+        ->assertSet('form.ssh_enabled', false)
+        ->set('form.host', 'neo4j.example.com')
+        ->set('form.username', 'neo4j')
+        ->set('form.password', 'secret')
+        ->set('form.backup_port', 7000)
+        ->set('form.backups_enabled', false)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $server = DatabaseServer::where('name', 'Graph')->firstOrFail();
+
+    expect($server->extra_config)->toBe(['backup_port' => 7000])
+        ->and($server->ssh_config_id)->toBeNull();
+});

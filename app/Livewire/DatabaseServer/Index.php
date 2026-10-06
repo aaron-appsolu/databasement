@@ -2,7 +2,6 @@
 
 namespace App\Livewire\DatabaseServer;
 
-use App\Enums\DatabaseType;
 use App\Livewire\Concerns\FiltersAndPaginates;
 use App\Models\Backup;
 use App\Models\DatabaseServer;
@@ -41,7 +40,11 @@ class Index extends Component
 
     public bool $showDeleteModal = false;
 
-    public bool $showRedisRestoreModal = false;
+    public bool $showManualRestoreModal = false;
+
+    /** Type whose manual restore steps the modal shows. */
+    #[Locked]
+    public ?string $manualRestoreType = null;
 
     public int $deleteSnapshotCount = 0;
 
@@ -98,8 +101,9 @@ class Index extends Component
 
         $this->restoreId = $id;
 
-        if ($server->database_type === DatabaseType::REDIS) {
-            $this->showRedisRestoreModal = true;
+        if (! $server->database_type->supportsRestore()) {
+            $this->manualRestoreType = $server->database_type->value;
+            $this->showManualRestoreModal = true;
 
             return;
         }

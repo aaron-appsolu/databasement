@@ -61,6 +61,12 @@ mongodump --host='...' --port='...' --username='...' --password='...' \
 redis-cli -h '...' -p '...' -a '...' --no-auth-warning --rdb dump.rdb
 ```
 
+**Neo4j (Enterprise):**
+```bash
+neo4j-admin database backup --from='host:6362' --type=full --to-path='dump.backup.d' 'database_name'
+```
+The single `.backup` file it writes is moved to `dump.backup`.
+
 All dumps are then compressed with gzip before being transferred to the storage volume.
 
 ## Failed Backups

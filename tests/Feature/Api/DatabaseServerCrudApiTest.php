@@ -146,6 +146,29 @@ test('store moves auth_source and dump_flags to extra_config', function () {
         ->assertJsonPath('data.extra_config.dump_flags', '--single-transaction');
 });
 
+test('store keeps a neo4j backup port and refuses an ssh tunnel', function () {
+    $user = User::factory()->withAbilities([Ability::ManageDatabaseServers->value])->create();
+    $payload = [
+        'name' => 'Graph',
+        'database_type' => 'neo4j',
+        'host' => 'neo4j.example.com',
+        'port' => 7687,
+        'username' => 'neo4j',
+        'backup_port' => 7000,
+        'backups_enabled' => false,
+    ];
+
+    $this->actingAs($user, 'sanctum')
+        ->postJson('/api/v1/database-servers', [...$payload, 'ssh_config_id' => DatabaseServerSshConfig::factory()->create()->id])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('ssh_config_id');
+
+    $this->actingAs($user, 'sanctum')
+        ->postJson('/api/v1/database-servers', $payload)
+        ->assertCreated()
+        ->assertJsonPath('data.extra_config.backup_port', 7000);
+});
+
 test('update preserves extra_config when keys are not sent', function () {
     $user = User::factory()->withAbilities([Ability::ManageDatabaseServers->value])->create();
     $server = DatabaseServer::factory()->create([

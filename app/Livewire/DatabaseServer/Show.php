@@ -2,7 +2,6 @@
 
 namespace App\Livewire\DatabaseServer;
 
-use App\Enums\DatabaseType;
 use App\Enums\NotificationChannelSelection;
 use App\Enums\NotificationTrigger;
 use App\Models\DatabaseServer;
@@ -16,6 +15,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Gate;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -32,7 +32,11 @@ class Show extends Component
 
     public bool $showDeleteModal = false;
 
-    public bool $showRedisRestoreModal = false;
+    public bool $showManualRestoreModal = false;
+
+    /** Type whose manual restore steps the modal shows. */
+    #[Locked]
+    public ?string $manualRestoreType = null;
 
     public int $deleteSnapshotCount = 0;
 
@@ -68,8 +72,9 @@ class Show extends Component
     {
         $this->authorize('restore', $this->server);
 
-        if ($this->server->database_type === DatabaseType::REDIS) {
-            $this->showRedisRestoreModal = true;
+        if (! $this->server->database_type->supportsRestore()) {
+            $this->manualRestoreType = $this->server->database_type->value;
+            $this->showManualRestoreModal = true;
 
             return;
         }

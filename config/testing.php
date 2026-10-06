@@ -69,6 +69,18 @@ return [
             'port' => env('TEST_FIREBIRD_PORT', 3050),
             'host' => env('TEST_FIREBIRD_HOST', 'firebird'),
         ],
+
+        // Opt-in: Neo4j Enterprise needs a licensed container and the Neo4j
+        // clients, which neither CI nor the dev image carries. The Neo4j
+        // integration test is skipped unless TEST_NEO4J_HOST is set.
+        'neo4j' => [
+            'host' => env('TEST_NEO4J_HOST'),
+            'port' => env('TEST_NEO4J_PORT', 7687),
+            'backup_port' => env('TEST_NEO4J_BACKUP_PORT', 6362),
+            'username' => env('TEST_NEO4J_USERNAME', 'neo4j'),
+            'password' => env('TEST_NEO4J_PASSWORD', 'testpassword1'),
+            'database' => env('TEST_NEO4J_DATABASE', 'neo4j'),
+        ],
     ],
 
     /*

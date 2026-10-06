@@ -18,6 +18,7 @@ use App\Rules\SafeDumpFlags;
 use App\Rules\SafeHost;
 use App\Rules\SafeUsername;
 use App\Services\Backup\Databases\DatabaseProvider;
+use App\Services\Backup\Databases\Neo4jDatabase;
 use App\Services\Backup\ShellProcessor;
 use App\Services\Backup\SyncBackupConfigurationsAction;
 use App\Services\CurrentOrganization;
@@ -62,6 +63,9 @@ class Form extends \Livewire\Form
     public bool $srv_enabled = false;
 
     public string $connection_options = '';
+
+    /** Neo4j backup listener port, stored in extra_config. */
+    public int $backup_port = Neo4jDatabase::DEFAULT_BACKUP_PORT;
 
     public string $dump_flags = '';
 
@@ -282,6 +286,11 @@ class Form extends \Livewire\Form
             }
         }
 
+        // The tunnel only forwards one port; see DatabaseType::supportsSshTunnel().
+        if (! (DatabaseType::tryFrom($value)?->supportsSshTunnel() ?? true)) {
+            $this->ssh_enabled = false;
+        }
+
         $this->connectionRules()->applyDefaults($this);
     }
 
@@ -484,6 +493,7 @@ class Form extends \Livewire\Form
         $this->auth_source = $server->getExtraConfig('auth_source', '');
         $this->srv_enabled = (bool) $server->getExtraConfig('srv_enabled', false);
         $this->connection_options = $server->getExtraConfig('connection_options', '');
+        $this->backup_port = (int) $server->getExtraConfig('backup_port', Neo4jDatabase::DEFAULT_BACKUP_PORT);
         $this->dump_flags = $server->getExtraConfig('dump_flags', '');
         $this->dump_format = $server->getExtraConfig('dump_format', 'plain');
         $this->dump_privileges = (bool) $server->getExtraConfig('dump_privileges', false);
@@ -855,6 +865,10 @@ class Form extends \Livewire\Form
         $this->normalizeDatabaseNames();
 
         $serverType = DatabaseType::tryFrom($this->database_type);
+
+        if ($serverType !== null && ! $serverType->supportsSshTunnel()) {
+            $this->ssh_enabled = false;
+        }
 
         if ($this->backups_enabled && $serverType !== null) {
             foreach ($this->backups as $index => $entry) {

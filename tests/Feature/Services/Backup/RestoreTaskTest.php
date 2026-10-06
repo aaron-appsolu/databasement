@@ -311,7 +311,7 @@ test('execute throws for Redis restore', function () {
     mkdir($config->workingDirectory, 0755, true);
 
     expect(fn () => $restoreTask->execute($config, new InMemoryBackupLogger))
-        ->toThrow(\App\Exceptions\Backup\RestoreException::class, 'Automated restore is not supported for Redis/Valkey');
+        ->toThrow(\App\Exceptions\Backup\RestoreException::class, 'Automated restore is not supported for Redis / Valkey');
 });
 
 test('execute establishes SSH tunnel when target server requires it', function () {

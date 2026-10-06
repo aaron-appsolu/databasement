@@ -62,6 +62,12 @@ readonly class SafeDumpFlags implements ValidationRule
             '--eval',                // runs a local Lua file on the server
             '--pipe', '-x', '-X',    // feeds stdin to the server
         ],
+        // neo4j-admin database backup
+        DatabaseType::NEO4J->value => [
+            '--to-path',             // the backup directory; the dump sets its own
+            '--additional-config',   // options, read from a file
+            '--expand-commands',     // runs commands embedded in the configuration
+        ],
         // sqlpackage
         DatabaseType::MSSQL->value => [
             '/targetfile', '/tf',    // the dump itself; the dump sets its own

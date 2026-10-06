@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Database Servers
 
-Database servers are the source of your backups. Databasement can connect to and backup MySQL, PostgreSQL, MariaDB, Microsoft SQL Server, MongoDB, SQLite, Firebird, and Redis/Valkey servers.
+Database servers are the source of your backups. Databasement can connect to and backup MySQL, PostgreSQL, MariaDB, Microsoft SQL Server, MongoDB, SQLite, Firebird, Redis/Valkey, and Neo4j Enterprise servers.
 
 ## Supported Versions
 
@@ -21,6 +21,7 @@ Databasement uses standard CLI tools to perform backup and restore operations. T
 | Firebird   | 3.x, 4.x, 5.x                 | `gbak` v5                    | Yes     |
 | Redis      | 2.8+                          | `redis-cli --rdb`            | No      |
 | Valkey     | 7.2+                          | `redis-cli --rdb`            | No      |
+| Neo4j      | 5.x Enterprise, 2025.x+ Enterprise | `neo4j-admin database backup` (not bundled) | No |
 
 :::info How this works
 - **MySQL / MariaDB**: Databasement ships both vendors' clients and picks one from the version the server reports. MariaDB servers from 10.2 on are dumped by `mariadb-dump`, the client that knows their own extensions. MySQL servers are dumped by Oracle's `mysqldump`, because the MariaDB client reads MySQL's YY.M version number (9.7 → 26.7) as a MariaDB one and asks for stored packages MySQL rejects. MariaDB servers below 10.2 also go to `mysqldump`: `mariadb-dump` reads a column from `information_schema` that only exists from 10.2 on, and no flag turns that off. Nothing needs configuring, and a server whose version cannot be read keeps `mariadb-dump`. Any extra dump flags you set on a server are passed to whichever client it uses, so they have to be flags that client accepts: `--column-statistics=0`, for instance, exists only in `mysqldump`.
@@ -30,6 +31,7 @@ Databasement uses standard CLI tools to perform backup and restore operations. T
 - **SQLite**: Backups are performed by copying the database file over SFTP. The SQLite 3.x file format has been backwards-compatible since 3.0.0 (2004).
 - **Firebird**: Backups use `gbak` to produce a portable `.fbk` transportable backup file; restore replays it with `gbak -rep`, which replaces the target `.fdb` if one already exists. Databasement ships the Firebird 5 client, which can back up and restore Firebird 3.x, 4.x, and 5.x servers. Each `.fdb` file on the server is its own database, so backup configuration is path-based (like SQLite) rather than name-based.
 - **Redis / Valkey**: `redis-cli --rdb` creates a point-in-time RDB snapshot via the replication protocol. Valkey 7.2+ is supported as a drop-in replacement for Redis. Restore is not supported.
+- **Neo4j (Enterprise Edition only)**: `neo4j-admin database backup --type=full` takes an online full backup of each database into a single `.backup` file. The Neo4j clients need a JRE and are part of the Neo4j distribution, so they are not in the image: mount a distribution matching your servers' version and set `NEO4J_BIN_DIR` and `JAVA_HOME` (see [Neo4j](#neo4j-enterprise)). Restore is not supported.
 :::
 
 ## Connection Requirements
@@ -195,6 +197,57 @@ Redis and Valkey instances are backed up using `redis-cli --rdb`, which creates 
 :::info Backup only
 Redis/Valkey supports backup only. Restore is not currently supported due to the nature of RDB file imports, which require direct server access.
 :::
+
+### Neo4j (Enterprise)
+
+Neo4j Enterprise Edition databases are backed up online with `neo4j-admin database backup`, one full backup per database. Community Edition has no online backup, so the connection test refuses it.
+
+#### Connection settings
+
+| Field | Description |
+|-------|-------------|
+| Host | Neo4j server hostname or IP |
+| Port | Bolt port (default: 7687), used to test the connection and list databases |
+| Username / Password | A Neo4j user allowed to run `SHOW DATABASES` and `dbms.components()` |
+| Backup Port | The server's backup listener (default: 6362), used by `neo4j-admin` |
+
+#### Clients
+
+`neo4j-admin` (backup) and `cypher-shell` (connection test, database list) need a JRE and ship with the Neo4j distribution, so the Databasement image does not include them. Mount a Neo4j distribution of the **same version as your servers** (an older client may not read a newer server's backup protocol) and point `NEO4J_BIN_DIR` at its `bin` directory. When `NEO4J_BIN_DIR` is unset both clients are looked up on `PATH`.
+
+They also need a Java 21 runtime built for Alpine (musl), such as the `eclipse-temurin:21-jre-alpine` image's `/opt/java/openjdk`, mounted into the container with `JAVA_HOME` pointing at it. The JRE inside the official `neo4j` image is built for glibc and does not run in the Databasement image. The same applies to an agent that backs up Neo4j servers.
+
+```yaml
+services:
+  app:
+    environment:
+      NEO4J_BIN_DIR: /opt/neo4j/bin
+      JAVA_HOME: /opt/jre
+    volumes:
+      - ./neo4j-enterprise-5.26:/opt/neo4j:ro   # a Neo4j Enterprise distribution
+      - ./jre-21-alpine:/opt/jre:ro
+```
+
+#### Exposing the backup port
+
+The backup listener only listens on `127.0.0.1:6362` by default. Set `server.backup.listen_address` in `neo4j.conf` (for example `0.0.0.0:6362`) so Databasement can reach it.
+
+:::warning The backup port does not check credentials
+Anyone who can reach the backup port can copy every database. Allow only the Databasement host (or agent) to reach it with a firewall or network policy. Securing the backup channel with a Neo4j SSL policy is not supported yet. SSH tunnels are not available for Neo4j either, because a tunnel only forwards the Bolt port.
+:::
+
+#### Restoring manually
+
+Restore writes into the target server's own store, so it has to run on the Neo4j server:
+
+```bash
+gunzip snapshot.backup.gz
+# in cypher-shell, on the system database: STOP DATABASE movies;  (skip for a new database)
+neo4j-admin database restore --from-path=/path/to/snapshot.backup --overwrite-destination=true movies
+# then: START DATABASE movies;  (or CREATE DATABASE movies; for a new one)
+```
+
+Point `--from-path` at the extracted file itself. `neo4j-admin` prints a `restore_metadata.cypher` script that recreates the database's users and roles; run it with `cypher-shell` if you need them.
 
 ### SQLite
 
